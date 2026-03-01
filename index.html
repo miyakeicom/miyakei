@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MIYAKEI — 世界OS地図 | 宮本啓司</title>
+<meta name="description" content="あなたの国のOSは誰が書いたか？GHQ占領から始まる東アジアの精神構造を、PC比喩で解体する。攻撃ゼロ、敬意100%。" />
+<meta property="og:title" content="MIYAKEI — 世界OS地図" />
+<meta property="og:description" content="あなたの国のOSは誰が書いたか？東アジアの精神構造をPC比喩で解体する。" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='4' fill='%23F8FAFC'/><text x='4' y='24' font-family='sans-serif' font-weight='900' font-size='20' fill='%230891B2'>M</text></svg>" />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700;900&family=Fira+Code:wght@400;500;700&family=Sora:wght@300;400;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:#F8FAFC;color:#334155;font-family:'Noto Sans JP',sans-serif;min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:#F8FAFC}
+::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:2px}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideRight{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:translateX(0)}}
+@keyframes scan{0%{top:-5%}100%{top:105%}}
+@keyframes glow{0%,100%{box-shadow:0 0 8px rgba(8,145,178,.06)}50%{box-shadow:0 0 24px rgba(8,145,178,.14)}}
+@keyframes borderGlow{0%,100%{border-color:rgba(8,145,178,.12)}50%{border-color:rgba(8,145,178,.35)}}
+
+#globe-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0}
+#scan-line{position:fixed;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(8,145,178,.06),transparent);animation:scan 8s linear infinite;pointer-events:none;z-index:2}
+
+.section-tag{font-family:'Fira Code',monospace;font-size:11px;letter-spacing:.25em;text-transform:uppercase;color:#0891B2;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section-tag::before{content:'';display:inline-block;width:20px;height:1px;background:#0891B2}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:18px 48px;display:flex;justify-content:space-between;align-items:center;transition:all .5s;border-bottom:1px solid transparent}
+nav.scrolled{background:rgba(248,250,252,.88);backdrop-filter:blur(24px);border-bottom-color:rgba(8,145,178,.08);box-shadow:0 1px 20px rgba(0,0,0,.04)}
+
+.nav-item{color:#94A3B8;text-decoration:none;font-size:13px;letter-spacing:.08em;font-family:'Fira Code',monospace;cursor:pointer;transition:all .3s;padding:6px 0;position:relative}
+.nav-item:hover{color:#0F172A}
+.nav-item:hover::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:#0891B2}
+
+.nav-listen{padding:8px 24px;background:rgba(8,145,178,.08);border:1px solid rgba(8,145,178,.2);color:#0891B2;font-size:12px;font-family:'Fira Code',monospace;letter-spacing:.08em;cursor:pointer;transition:all .3s;border-radius:3px}
+.nav-listen:hover{background:rgba(8,145,178,.15);border-color:#0891B2}
+
+.country-row{transition:all .35s cubic-bezier(.4,0,.2,1);cursor:pointer;border-left:3px solid transparent}
+.country-row:hover{background:rgba(8,145,178,.03);border-left-color:#0891B2}
+
+.ep-card{transition:all .4s cubic-bezier(.4,0,.2,1);cursor:pointer;position:relative}
+.ep-card:hover{transform:translateX(8px);background:rgba(8,145,178,.03)}
+.ep-card:hover .play-btn{background:#0891B2;color:#fff;transform:scale(1.1)}
+
+.layer-block{transition:all .4s;cursor:pointer}
+.layer-block:hover{transform:scale(1.01)}
+
+.funnel-step{transition:all .35s;cursor:pointer}
+.funnel-step:hover{transform:translateY(-4px);box-shadow:0 8px 30px rgba(0,0,0,.06)}
+
+.lang-card{transition:all .4s;cursor:pointer;animation:glow 4s ease-in-out infinite}
+.lang-card:hover{transform:translateY(-6px) scale(1.02);border-color:rgba(8,145,178,.4)!important;box-shadow:0 12px 40px rgba(8,145,178,.1)}
+
+.platform-badge{transition:all .3s;cursor:pointer}
+.platform-badge:hover{background:rgba(8,145,178,.08)!important;border-color:rgba(8,145,178,.25)!important;transform:translateY(-2px)}
+
+.content-wrap{position:relative;z-index:5}
+.glass{background:rgba(255,255,255,.7);backdrop-filter:blur(16px);border:1px solid rgba(8,145,178,.08);border-radius:8px}
+.terminal-wrap{background:rgba(15,23,42,.95);border:1px solid rgba(8,145,178,.2);border-radius:8px;overflow:hidden;backdrop-filter:blur(10px)}
+.section-alt{background:linear-gradient(180deg,rgba(241,245,249,.6),rgba(248,250,252,1))}
+
+@media(max-width:900px){
+  nav{padding:12px 20px}
+  .nav-links{display:none!important}
+  section,.section-pad{padding-left:20px!important;padding-right:20px!important}
+  .os-grid{grid-template-columns:80px 1fr!important;font-size:11px!important}
+  .os-header{display:none!important}
+  .os-cell-hide{display:none!important}
+  .lang-grid{grid-template-columns:1fr 1fr!important}
+  .about-grid{grid-template-columns:1fr!important}
+  .about-portrait{display:none!important}
+  h1{font-size:clamp(32px,8vw,76px)!important}
+  h2{font-size:28px!important}
+  .cta-buttons{flex-direction:column;align-items:stretch}
+}
+</style>
+</head>
+<body>
+
+<canvas id="globe-canvas"></canvas>
+<div id="scan-line"></div>
+
+<!-- NAV -->
+<nav id="main-nav">
+  <div style="font-family:'Sora',sans-serif;font-weight:800;font-size:24px;letter-spacing:.12em">
+    <span style="color:#0891B2">MIYA</span><span style="color:#0F172A">KEI</span>
+    <span style="color:#CBD5E1;font-size:10px;margin-left:8px;font-family:'Fira Code';font-weight:400;letter-spacing:.05em">v2.0</span>
+  </div>
+  <div class="nav-links" style="display:flex;gap:28px;align-items:center">
+    <span class="nav-item">OS Map</span>
+    <span class="nav-item">Episodes</span>
+    <span class="nav-item">Blog</span>
+    <span class="nav-item">Kindle</span>
+    <span class="nav-item">About</span>
+    <div class="nav-listen">▶ LISTEN</div>
+  </div>
+</nav>
+
+<div class="content-wrap">
+
+<!-- HERO -->
+<section style="min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:140px 48px 100px" class="section-pad">
+  <div style="max-width:1140px;margin:0 auto;width:100%">
+    <div class="section-tag" style="animation:fadeIn 1s .2s both">世界OS地図プロジェクト — MIYAKEI</div>
+    <h1 style="font-family:'Sora',sans-serif;font-size:clamp(40px,6.5vw,76px);font-weight:800;line-height:1.08;margin-bottom:28px;animation:fadeUp .8s .4s both">
+      <span style="color:#0F172A">あなたの国の</span><span style="color:#0891B2;text-shadow:0 0 60px rgba(8,145,178,.2)">OS</span><span style="color:#0F172A">は</span><br/>
+      <span style="color:#94A3B8">誰が書いたか？</span>
+    </h1>
+    <p style="font-size:16px;line-height:1.9;color:#64748B;max-width:560px;margin-bottom:52px;font-weight:300;animation:fadeUp .8s .6s both">
+      GHQ占領から始まる東アジアの精神構造を、PC比喩で解体する。<br/>攻撃ゼロ、敬意100%。ただ構造を、見せる。
+    </p>
+    <div class="terminal-wrap" style="max-width:680px;animation:fadeUp .8s .8s both">
+      <div style="padding:10px 16px;background:rgba(8,145,178,.08);border-bottom:1px solid rgba(8,145,178,.15);display:flex;align-items:center;gap:8px">
+        <div style="width:9px;height:9px;border-radius:50%;background:#F43F5E;opacity:.8"></div>
+        <div style="width:9px;height:9px;border-radius:50%;background:#F59E0B;opacity:.8"></div>
+        <div style="width:9px;height:9px;border-radius:50%;background:#10B981;opacity:.8"></div>
+        <span style="font-family:'Fira Code';font-size:10px;color:#475569;margin-left:8px">miyakei@analysis:~</span>
+      </div>
+      <pre id="terminal" style="padding:20px 22px;font-family:'Fira Code',monospace;font-size:11.5px;line-height:1.75;color:#22D3EE;white-space:pre-wrap;min-height:220px;text-shadow:0 0 10px rgba(34,211,238,.3)"></pre>
+    </div>
+  </div>
+</section>
+
+<!-- OS MAP -->
+<section class="section-alt section-pad" style="padding:120px 48px;border-top:1px solid rgba(8,145,178,.06)">
+  <div style="max-width:1140px;margin:0 auto">
+    <div class="section-tag">OS_MAP — 世界構造分析</div>
+    <h2 style="font-family:'Sora';font-size:38px;font-weight:800;margin-bottom:6px;color:#0F172A">世界OS地図</h2>
+    <p style="font-size:14px;color:#94A3B8;margin-bottom:52px;font-family:'Fira Code';letter-spacing:.03em">国をPCに例えたとき、何が見えるか。各国のOS・壁紙・出生率を構造分析。</p>
+    <div class="glass" style="overflow:hidden">
+      <div class="os-header" style="display:grid;grid-template-columns:70px 1.2fr 1fr 70px 60px 1.2fr;padding:14px 20px;border-bottom:1px solid rgba(8,145,178,.08);font-size:10px;font-family:'Fira Code';color:#94A3B8;letter-spacing:.15em;text-transform:uppercase">
+        <span>Code</span><span>Operating System</span><span>Wallpaper</span><span>Rating</span><span>TFR</span><span>Status</span>
+      </div>
+      <div id="os-table"></div>
+    </div>
+  </div>
+</section>
+
+<!-- LAYER STRUCTURE -->
+<section class="section-pad" style="padding:120px 48px;border-top:1px solid rgba(8,145,178,.06)">
+  <div style="max-width:1140px;margin:0 auto">
+    <div class="section-tag">LAYER_STRUCTURE — 4層構造モデル</div>
+    <h2 style="font-family:'Sora';font-size:38px;font-weight:800;margin-bottom:48px;color:#0F172A">PC構造の4層</h2>
+    <div id="layers-container" style="display:flex;flex-direction:column;gap:4px"></div>
+  </div>
+</section>
+
+<!-- EPISODES -->
+<section class="section-alt section-pad" style="padding:120px 48px;border-top:1px solid rgba(8,145,178,.06)">
+  <div style="max-width:1140px;margin:0 auto">
+    <div class="section-tag">EPISODES — 配信一覧</div>
+    <h2 style="font-family:'Sora';font-size:38px;font-weight:800;margin-bottom:6px;color:#0F172A">エピソード</h2>
+    <p style="font-size:14px;color:#94A3B8;margin-bottom:48px;font-family:'Fira Code'">音声のみ。ながら聴き推奨。YouTube / Spotify / Apple Podcast</p>
+    <div id="episodes-container" style="display:flex;flex-direction:column;gap:6px"></div>
+  </div>
+</section>
+
+<!-- FUNNEL -->
+<section class="section-pad" style="padding:120px 48px;border-top:1px solid rgba(8,145,178,.06)">
+  <div style="max-width:1140px;margin:0 auto">
+    <div class="section-tag">FUNNEL — 5段階コンテンツ設計</div>
+    <h2 style="font-family:'Sora';font-size:38px;font-weight:800;margin-bottom:48px;color:#0F172A">コンテンツ導線</h2>
+    <div id="funnel-container" style="display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+</section>
+
+<!-- MULTILINGUAL -->
+<section class="section-alt section-pad" style="padding:120px 48px;border-top:1px solid rgba(8,145,178,.06)">
+  <div style="max-width:1140px;margin:0 auto;text-align:center">
+    <div class="section-tag" style="justify-content:center">MULTILINGUAL — 4言語配信</div>
+    <h2 style="font-family:'Sora';font-size:38px;font-weight:800;margin-bottom:12px;color:#0F172A">4つの言語、4つの視点</h2>
+    <p style="font-size:14px;color:#94A3B8;margin-bottom:52px;font-family:'Fira Code'">各言語に独自ホスト。翻訳ではなくローカライズ。現地発オリジナルも配信。</p>
+    <div class="lang-grid" id="lang-container" style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px"></div>
+  </div>
+</section>
+
+<!-- PLATFORMS -->
+<section class="section-pad" style="padding:100px 48px;border-top:1px solid rgba(8,145,178,.06)">
+  <div style="max-width:1140px;margin:0 auto">
+    <div class="section-tag">PLATFORMS — 配信先</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:24px" id="platforms-container"></div>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section class="section-alt section-pad" style="padding:120px 48px;border-top:1px solid rgba(8,145,178,.06)">
+  <div class="about-grid" style="max-width:1140px;margin:0 auto;display:grid;grid-template-columns:1fr 320px;gap:80px;align-items:center">
+    <div>
+      <div class="section-tag">ABOUT — 著者</div>
+      <h2 style="font-family:'Sora';font-size:42px;font-weight:800;margin-bottom:28px;color:#0F172A">宮本啓司</h2>
+      <p style="font-size:15px;line-height:2;color:#64748B;margin-bottom:20px">東アジア構造分析。世界OS地図の提唱者。アジア複数国での長期生活経験をもとに、国と人間の精神構造をPC比喩で解体する。</p>
+      <p style="font-size:15px;line-height:2;color:#64748B;margin-bottom:28px">攻撃ゼロ、敬意100%。右でも左でもない。怒らせたら負け。気づかせたら勝ち。ただ構造を、見せる。</p>
+      <div style="display:flex;gap:16px">
+        <div style="padding:10px 28px;background:rgba(8,145,178,.08);border:1px solid rgba(8,145,178,.2);border-radius:3px;font-size:13px;font-family:'Fira Code';color:#0891B2;cursor:pointer;transition:all .3s">▶ 最新エピソード</div>
+        <div style="padding:10px 28px;border:1px solid rgba(148,163,184,.3);border-radius:3px;font-size:13px;font-family:'Fira Code';color:#94A3B8;cursor:pointer;transition:all .3s">📖 Kindle</div>
+      </div>
+    </div>
+    <div class="about-portrait" style="display:flex;justify-content:center">
+      <div style="width:280px;height:360px;background:linear-gradient(160deg,rgba(8,145,178,.06),rgba(248,250,252,.9));border:1px solid rgba(8,145,178,.1);border-radius:8px;position:relative;overflow:hidden;animation:borderGlow 6s ease-in-out infinite">
+        <svg style="position:absolute;top:0;left:0;width:100%;height:100%;opacity:.08">
+          <line x1="20" y1="40" x2="140" y2="40" stroke="#0891B2" stroke-width="1"/>
+          <line x1="140" y1="40" x2="140" y2="120" stroke="#0891B2" stroke-width="1"/>
+          <line x1="40" y1="80" x2="200" y2="80" stroke="#0891B2" stroke-width="1"/>
+          <line x1="60" y1="160" x2="220" y2="160" stroke="#0891B2" stroke-width="1"/>
+          <line x1="100" y1="200" x2="100" y2="300" stroke="#0891B2" stroke-width="1"/>
+          <line x1="180" y1="120" x2="180" y2="280" stroke="#0891B2" stroke-width="1"/>
+          <circle cx="140" cy="40" r="3" fill="#0891B2"/>
+          <circle cx="140" cy="120" r="3" fill="#0891B2"/>
+          <circle cx="100" cy="200" r="3" fill="#0891B2"/>
+          <circle cx="180" cy="280" r="3" fill="#0891B2"/>
+        </svg>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Sora';font-size:100px;font-weight:900;color:rgba(8,145,178,.06)">M</div>
+        <div style="position:absolute;bottom:24px;left:24px;font-family:'Fira Code';font-size:10px;color:#CBD5E1;line-height:1.8">
+          MIYAKEI<br/>宮本啓司<br/>EST. 2026<br/><span style="color:#0891B2;opacity:.7">WORLD OS MAP ANALYST</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section-pad" style="padding:100px 48px 40px;border-top:1px solid rgba(8,145,178,.06);text-align:center">
+  <div style="font-family:'Sora';font-size:28px;font-weight:700;color:#0F172A;margin-bottom:16px">あなたのPCの中身を、見てみませんか？</div>
+  <p style="font-size:14px;color:#94A3B8;margin-bottom:36px">毎週配信。YouTube / Spotify / Apple Podcast</p>
+  <div class="cta-buttons" style="display:inline-flex;gap:16px">
+    <div style="padding:14px 40px;background:#0891B2;color:#fff;font-family:'Fira Code';font-size:14px;font-weight:700;border-radius:4px;cursor:pointer;letter-spacing:.05em;transition:all .3s;box-shadow:0 4px 20px rgba(8,145,178,.25)">▶ LISTEN NOW</div>
+    <div style="padding:14px 40px;border:1px solid rgba(8,145,178,.25);color:#0891B2;font-family:'Fira Code';font-size:14px;border-radius:4px;cursor:pointer;letter-spacing:.05em;transition:all .3s">READ ON NOTE</div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer style="padding:40px 48px;border-top:1px solid rgba(8,145,178,.06)">
+  <div style="max-width:1140px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+    <div>
+      <span style="font-family:'Sora';font-weight:800;font-size:16px;letter-spacing:.1em"><span style="color:#0891B2">MIYA</span><span style="color:#64748B">KEI</span></span>
+      <span style="font-size:11px;color:#CBD5E1;font-family:'Fira Code';margin-left:16px">© 2026 — 攻撃ゼロ、敬意100%。</span>
+    </div>
+    <div id="footer-links" style="display:flex;gap:20px"></div>
+  </div>
+</footer>
+
+</div>
+
+<script>
+// ============================================================
+//  THREE.JS ROTATING WIREFRAME GLOBE
+// ============================================================
+(function initGlobe(){
+  const canvas = document.getElementById('globe-canvas');
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setClearColor(0x000000, 0);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.set(1.5, 0.3, 5);
+
+  // Main wireframe globe
+  const geo1 = new THREE.SphereGeometry(1.8, 40, 28);
+  const mat1 = new THREE.MeshBasicMaterial({ color: 0x0891B2, wireframe: true, transparent: true, opacity: 0.07 });
+  const globe = new THREE.Mesh(geo1, mat1);
+  scene.add(globe);
+
+  // Inner sphere - subtle fill
+  const geo2 = new THREE.SphereGeometry(1.78, 20, 14);
+  const mat2 = new THREE.MeshBasicMaterial({ color: 0x0891B2, wireframe: true, transparent: true, opacity: 0.025 });
+  const inner = new THREE.Mesh(geo2, mat2);
+  scene.add(inner);
+
+  // Orbit rings
+  function makeRing(innerR, outerR, rotX, rotZ, op){
+    const g = new THREE.RingGeometry(innerR, outerR, 96);
+    const m = new THREE.MeshBasicMaterial({ color: 0x0891B2, transparent: true, opacity: op, side: THREE.DoubleSide });
+    const mesh = new THREE.Mesh(g, m);
+    mesh.rotation.x = rotX;
+    mesh.rotation.z = rotZ || 0;
+    scene.add(mesh);
+    return mesh;
+  }
+  const ring1 = makeRing(2.3, 2.32, Math.PI*0.35, 0, 0.05);
+  const ring2 = makeRing(2.5, 2.52, Math.PI*0.55, Math.PI*0.3, 0.03);
+  const ring3 = makeRing(2.7, 2.71, Math.PI*0.7, Math.PI*0.15, 0.02);
+
+  // Data points on surface
+  const dotGroup = new THREE.Group();
+  const dots = [];
+  for(let i = 0; i < 80; i++){
+    const phi = Math.acos(2*Math.random()-1);
+    const theta = Math.random()*Math.PI*2;
+    const r = 1.82;
+    dots.push({
+      x: r*Math.sin(phi)*Math.cos(theta),
+      y: r*Math.sin(phi)*Math.sin(theta),
+      z: r*Math.cos(phi),
+      pulse: Math.random()*Math.PI*2,
+      size: 0.01 + Math.random()*0.015
+    });
+  }
+
+  dots.forEach(p => {
+    const g = new THREE.SphereGeometry(p.size, 6, 6);
+    const m = new THREE.MeshBasicMaterial({ color: 0x0891B2, transparent: true, opacity: 0.4 });
+    const dot = new THREE.Mesh(g, m);
+    dot.position.set(p.x, p.y, p.z);
+    dot.userData = { basePulse: p.pulse };
+    dotGroup.add(dot);
+  });
+  globe.add(dotGroup);
+
+  // Connection lines
+  for(let i=0;i<dots.length;i++){
+    for(let j=i+1;j<dots.length;j++){
+      const a=dots[i],b=dots[j];
+      const d=Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2+(a.z-b.z)**2);
+      if(d<0.7 && Math.random()>0.6){
+        const pts=[new THREE.Vector3(a.x,a.y,a.z),new THREE.Vector3(b.x,b.y,b.z)];
+        const lg=new THREE.BufferGeometry().setFromPoints(pts);
+        const lm=new THREE.LineBasicMaterial({color:0x0891B2,transparent:true,opacity:0.05});
+        globe.add(new THREE.Line(lg,lm));
+      }
+    }
+  }
+
+  // Mouse parallax
+  let mouseX=0,mouseY=0;
+  document.addEventListener('mousemove',e=>{
+    mouseX=(e.clientX/window.innerWidth-0.5)*2;
+    mouseY=(e.clientY/window.innerHeight-0.5)*2;
+  });
+
+  // Scroll
+  let scrollF=0;
+  window.addEventListener('scroll',()=>{
+    scrollF=window.scrollY/(document.documentElement.scrollHeight-window.innerHeight);
+  });
+
+  // Resize
+  window.addEventListener('resize',()=>{
+    camera.aspect=window.innerWidth/window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth,window.innerHeight);
+  });
+
+  // Animation loop
+  let t=0;
+  function animate(){
+    requestAnimationFrame(animate);
+    t+=0.003;
+
+    globe.rotation.y = t*0.6;
+    globe.rotation.x = 0.2 + Math.sin(t*0.4)*0.08;
+    inner.rotation.y = -t*0.3;
+    inner.rotation.x = 0.35;
+
+    ring1.rotation.z += 0.0004;
+    ring2.rotation.y += 0.0003;
+    ring3.rotation.z -= 0.0002;
+
+    // Mouse
+    globe.position.x += (mouseX*0.12 - globe.position.x)*0.03;
+    globe.position.y += (-mouseY*0.08 - globe.position.y)*0.03;
+
+    // Scroll parallax — globe drifts right
+    camera.position.x += ((1.5 + scrollF*1.8) - camera.position.x)*0.015;
+    camera.position.y += ((0.3 - scrollF*0.5) - camera.position.y)*0.015;
+
+    // Pulsing dots
+    dotGroup.children.forEach(dot=>{
+      const p=(Math.sin(t*2+dot.userData.basePulse)+1)/2;
+      dot.material.opacity=0.15+p*0.4;
+      const s=0.7+p*0.7;
+      dot.scale.set(s,s,s);
+    });
+
+    // Fade globe slightly on scroll
+    mat1.opacity = Math.max(0.02, 0.07 - scrollF*0.03);
+    mat2.opacity = Math.max(0.01, 0.025 - scrollF*0.015);
+
+    renderer.render(scene,camera);
+  }
+  animate();
+})();
+
+// ============================================================
+//  DATA
+// ============================================================
+const countries=[
+  {code:"JP",name:"日本",os:"GHQ製Mac（機能制限版）",wallpaper:"5枚重ね",rating:"S",fertility:"1.20",desc:"麻痺。気づいてない",color:"#E11D48"},
+  {code:"KR",name:"韓国",os:"Hackintosh（日本製カーネル）",wallpaper:"反日（ドライバ化）",rating:"S+++",fertility:"0.72",desc:"日本製エンジンで日本と勝負",color:"#2563EB"},
+  {code:"TW",name:"台湾",os:"Linux（自選OS）",wallpaper:"なし",rating:"B+",fertility:"1.07",desc:"OS健全。環境がキツい",color:"#059669"},
+  {code:"CN",name:"中国",os:"共産党デュアルOS",wallpaper:"反日（ON/OFF可）",rating:"S+",fertility:"1.09",desc:"寝そべり族",color:"#DC2626"},
+  {code:"SG",name:"シンガポール",os:"効率特化OS",wallpaper:"—",rating:"B",fertility:"1.04",desc:"序列を実力に書換",color:"#D97706"},
+  {code:"VN",name:"ベトナム",os:"闘争OS",wallpaper:"—",rating:"C+",fertility:"1.94",desc:"闘争が序列を部分破壊",color:"#7C3AED"},
+  {code:"TH",name:"タイ",os:"自前OS+仏教",wallpaper:"—",rating:"D+",fertility:"1.33",desc:"仏教が序列を溶かす",color:"#EA580C"},
+  {code:"PH",name:"フィリピン",os:"自前OS+カトリック",wallpaper:"—",rating:"F+",fertility:"2.75",desc:"序列なし。自由",color:"#0891B2"},
+  {code:"US",name:"米国",os:"設計者側",wallpaper:"—",rating:"—",fertility:"—",desc:"他国のOS書く側",color:"#4F46E5"},
+];
+
+const episodes=[
+  {num:"01",title:"あなたの国のOSは誰が書いたか",guest:null,tag:"導入",duration:"38:00"},
+  {num:"02",title:"韓国の反日は壁紙か、ドライバか",guest:"キム・ジュンホ",tag:"韓国",duration:"45:00"},
+  {num:"03",title:"自己責任という最高傑作壁紙",guest:"心理学者AI",tag:"日本",duration:"42:00"},
+  {num:"04",title:"台湾が唯一Linuxになれた理由",guest:"リン・メイファ",tag:"台湾",duration:"40:00"},
+  {num:"05",title:"儒教BIOSと出生率崩壊",guest:"人口学者AI",tag:"東アジア",duration:"50:00"},
+  {num:"06",title:"朴正煕——自分の設計を隠した男",guest:null,tag:"韓国",duration:"47:00"},
+  {num:"07",title:"アメリカは韓国に興味がなかった",guest:"米国政治学者AI",tag:"米韓",duration:"44:00"},
+  {num:"08",title:"人口10万の国民と脱北者のLINE",guest:null,tag:"日本",duration:"35:00"},
+];
+
+const layers=[
+  {name:"アプリ層",sub:"APPLICATION",desc:"経済活動、文化、日常行動",depth:"表層",color:"#0891B2",bg:"rgba(8,145,178,0.04)"},
+  {name:"壁紙層",sub:"WALLPAPER",desc:"反日、日本すごい、自己責任、平和国家…",depth:"表層〜中層",color:"#7C3AED",bg:"rgba(124,58,237,0.04)"},
+  {name:"OS層",sub:"OPERATING SYSTEM",desc:"GHQ-Mac / Hackintosh / Linux / 共産党OS",depth:"中層",color:"#E11D48",bg:"rgba(225,29,72,0.04)"},
+  {name:"BIOS層",sub:"BASIC I/O SYSTEM",desc:"儒教。1000年分。東アジア共通。書き換え最難。",depth:"最深部",color:"#D97706",bg:"rgba(217,119,6,0.05)"},
+];
+
+const funnel=[
+  {step:"①",name:"YouTube / Podcast",price:"無料",desc:"音声本編 30-60分",color:"#0891B2"},
+  {step:"②",name:"miyakei.com Blog",price:"無料",desc:"要約＋用語辞典＋SEO",color:"#059669"},
+  {step:"③",name:"note 有料記事",price:"¥300-500",desc:"全文＋図解＋未公開パート",color:"#7C3AED"},
+  {step:"④",name:"Kindle 書籍",price:"¥1,000-1,500",desc:"編集済み完成版",color:"#D97706"},
+  {step:"⑤",name:"天野紗希 鑑定",price:"¥3,000-10,000",desc:"個人OS診断",color:"#E11D48"},
+];
+
+const langData=[
+  {lang:"日本語",host:"宮本啓司",role:"理論の原作者",hook:"お前のMacの管理者権限はアメリカだよ",flag:"🇯🇵",accent:"#0891B2"},
+  {lang:"한국어",host:"박민수",role:"韓国人の視点で語る",hook:"우리 OS를 같이 들여다 볼까요?",flag:"🇰🇷",accent:"#2563EB"},
+  {lang:"English",host:"Alex Park",role:"外からの分析",hook:"Did you know America writes other nations' OS?",flag:"🇺🇸",accent:"#4F46E5"},
+  {lang:"繁體中文",host:"林志明",role:"台湾からの共感",hook:"我們是唯一選擇自己OS的國家",flag:"🇹🇼",accent:"#059669"},
+];
+
+// ============================================================
+//  RENDER
+// ============================================================
+function renderOSTable(){
+  const c=document.getElementById('os-table');
+  countries.forEach((r,i)=>{
+    const ratingColor=r.rating.includes('+++')?'#E11D48':r.rating.includes('+')&&r.rating.startsWith('S')?'#EA580C':r.rating==='S'?'#D97706':'#94A3B8';
+    const fertColor=r.fertility==='—'?'#CBD5E1':parseFloat(r.fertility)<1.3?'#E11D48':parseFloat(r.fertility)<2?'#D97706':'#059669';
+    const d=document.createElement('div');
+    d.className='country-row os-grid';
+    d.style.cssText=`display:grid;grid-template-columns:70px 1.2fr 1fr 70px 60px 1.2fr;padding:14px 20px;align-items:center;border-bottom:${i<countries.length-1?'1px solid rgba(8,145,178,.05)':'none'};animation:slideRight .5s ${.08*i}s both`;
+    d.innerHTML=`<span class="os-code" style="font-family:'Fira Code';font-size:13px;font-weight:700;color:#94A3B8;transition:all .3s">${r.code}</span><span class="os-name" style="font-size:13px;color:#64748B;transition:color .3s">${r.os}</span><span class="os-cell-hide" style="font-size:12px;color:#94A3B8">${r.wallpaper}</span><span class="os-cell-hide" style="font-family:'Fira Code';font-size:12px;font-weight:700;color:${ratingColor};${r.rating.includes('+++')?'text-shadow:0 0 8px rgba(225,29,72,.2)':''}">${r.rating}</span><span class="os-cell-hide" style="font-family:'Fira Code';font-size:12px;color:${fertColor}">${r.fertility}</span><span class="os-desc" style="font-size:12px;font-style:italic;color:#94A3B8;transition:color .3s">${r.desc}</span>`;
+    d.addEventListener('mouseenter',()=>{d.querySelector('.os-code').style.color=r.color;d.querySelector('.os-name').style.color='#0F172A';d.querySelector('.os-desc').style.color=r.color});
+    d.addEventListener('mouseleave',()=>{d.querySelector('.os-code').style.color='#94A3B8';d.querySelector('.os-name').style.color='#64748B';d.querySelector('.os-desc').style.color='#94A3B8'});
+    c.appendChild(d);
+  });
+}
+
+function renderLayers(){
+  const c=document.getElementById('layers-container');
+  layers.forEach((l,i)=>{
+    const d=document.createElement('div');
+    d.className='layer-block';
+    d.style.cssText=`background:${l.bg};border:1px solid ${l.color}15;border-left:4px solid ${l.color};padding:32px 36px;display:flex;justify-content:space-between;align-items:center;border-radius:4px;animation:fadeUp .6s ${.15*i}s both`;
+    d.innerHTML=`<div><div style="font-family:'Fira Code';font-size:10px;color:${l.color};letter-spacing:.2em;margin-bottom:6px;opacity:.7">${l.sub} — ${l.depth}</div><div class="layer-name" style="font-family:'Sora';font-size:22px;font-weight:700;color:#0F172A;transition:all .3s">${l.name}</div></div><div style="font-size:14px;color:#64748B;text-align:right;max-width:400px">${l.desc}</div>`;
+    d.addEventListener('mouseenter',()=>{d.querySelector('.layer-name').style.color=l.color});
+    d.addEventListener('mouseleave',()=>{d.querySelector('.layer-name').style.color='#0F172A'});
+    c.appendChild(d);
+  });
+}
+
+function renderEpisodes(){
+  const c=document.getElementById('episodes-container');
+  episodes.forEach(ep=>{
+    const d=document.createElement('div');
+    d.className='ep-card';
+    d.style.cssText='padding:22px 24px;border-bottom:1px solid rgba(8,145,178,.05);display:flex;align-items:center;gap:20px;border-radius:4px';
+    d.innerHTML=`<div class="play-btn" style="width:40px;height:40px;border-radius:50%;border:1.5px solid rgba(8,145,178,.2);display:flex;align-items:center;justify-content:center;font-size:12px;color:#0891B2;transition:all .3s;flex-shrink:0">▶</div><div style="font-family:'Fira Code';font-size:24px;font-weight:700;color:#E2E8F0;min-width:40px">${ep.num}</div><div style="flex:1"><div style="font-size:15px;font-weight:500;color:#0F172A;margin-bottom:3px">${ep.title}</div><div style="font-size:11px;color:#94A3B8;font-family:'Fira Code'">${ep.guest?`Guest: ${ep.guest}`:'Solo'} — ${ep.duration}</div></div><div style="padding:4px 14px;background:rgba(8,145,178,.05);border:1px solid rgba(8,145,178,.1);border-radius:3px;font-size:10px;font-family:'Fira Code';color:#0891B2;letter-spacing:.05em">${ep.tag}</div>`;
+    c.appendChild(d);
+  });
+}
+
+function renderFunnel(){
+  const c=document.getElementById('funnel-container');
+  funnel.forEach(f=>{
+    const d=document.createElement('div');
+    d.className='funnel-step';
+    d.style.cssText=`display:flex;align-items:center;gap:24px;padding:24px 28px;background:linear-gradient(90deg,${f.color}08,transparent);border-left:3px solid ${f.color};border-radius:4px`;
+    d.innerHTML=`<div style="font-family:'Sora';font-size:28px;font-weight:800;color:${f.color};min-width:36px">${f.step}</div><div style="flex:1"><div style="font-size:16px;font-weight:600;color:#0F172A;margin-bottom:2px">${f.name}</div><div style="font-size:12px;color:#94A3B8;font-family:'Fira Code'">${f.desc}</div></div><div style="font-family:'Fira Code';font-size:14px;font-weight:700;color:${f.color}">${f.price}</div>`;
+    c.appendChild(d);
+  });
+}
+
+function renderLang(){
+  const c=document.getElementById('lang-container');
+  langData.forEach(l=>{
+    const d=document.createElement('div');
+    d.className='lang-card';
+    d.style.cssText='background:rgba(255,255,255,.8);border:1px solid rgba(8,145,178,.08);border-radius:8px;padding:32px 24px;backdrop-filter:blur(10px);text-align:left';
+    d.innerHTML=`<div style="font-size:36px;margin-bottom:16px">${l.flag}</div><div style="font-family:'Sora';font-size:20px;font-weight:700;color:#0F172A;margin-bottom:4px">${l.lang}</div><div style="font-size:13px;color:${l.accent};margin-bottom:12px;font-weight:600">Host: ${l.host}</div><div style="font-size:11px;color:#94A3B8;margin-bottom:16px;font-family:'Fira Code'">${l.role}</div><div style="font-size:12px;color:#64748B;font-style:italic;line-height:1.6;border-top:1px solid rgba(8,145,178,.06);padding-top:12px">"${l.hook}"</div>`;
+    c.appendChild(d);
+  });
+}
+
+function renderPlatforms(){
+  const c=document.getElementById('platforms-container');
+  ["YouTube","Spotify","Apple Podcast","Amazon Music","note","Kindle","X (Twitter)","Instagram","TikTok"].forEach(p=>{
+    const d=document.createElement('div');
+    d.className='platform-badge';
+    d.style.cssText="padding:10px 22px;background:rgba(8,145,178,.03);border:1px solid rgba(8,145,178,.08);border-radius:3px;font-size:13px;color:#64748B;font-family:'Fira Code'";
+    d.textContent=p;
+    c.appendChild(d);
+  });
+}
+
+function renderFooterLinks(){
+  const c=document.getElementById('footer-links');
+  ["YouTube","Spotify","X","note","Kindle"].forEach(s=>{
+    const sp=document.createElement('span');
+    sp.style.cssText="font-size:11px;color:#CBD5E1;font-family:'Fira Code';cursor:pointer;transition:color .3s";
+    sp.textContent=s;
+    sp.addEventListener('mouseenter',()=>sp.style.color='#0891B2');
+    sp.addEventListener('mouseleave',()=>sp.style.color='#CBD5E1');
+    c.appendChild(sp);
+  });
+}
+
+// ============================================================
+//  BOOT TERMINAL
+// ============================================================
+const bootSequence=`$ miyakei --scan-os --target=world
+> Initializing PC metaphor engine...
+> Scanning BIOS layer.......... [儒教 1000yr detected]
+> Scanning OS layer............ [GHQ-Mac | Hackintosh | Linux | CCP-Dual]
+> Scanning wallpaper layer..... [反日 | 日本すごい | 自己責任 | 平和国家]
+> Scanning driver layer........ [WARNING: 反日 disguised as wallpaper]
+> Fertility rate anomaly....... [KR:0.72 | JP:1.20 | TW:1.07]
+> Root cause identified........ [序列 BIOS bottleneck]
+> 
+> ██████████████████████ Analysis complete.
+> 10 nations mapped. 4 languages ready.
+> Run 'miyakei --listen' to begin._`;
+
+(function(){
+  const el=document.getElementById('terminal');
+  let i=0,cursor=true;
+  const ti=setInterval(()=>{if(i<=bootSequence.length){el.textContent=bootSequence.slice(0,i)+(cursor?'█':' ');i++}else clearInterval(ti)},14);
+  setInterval(()=>{cursor=!cursor;if(i>bootSequence.length)el.textContent=bootSequence+(cursor?'█':' ')},530);
+})();
+
+// NAV SCROLL
+window.addEventListener('scroll',()=>{document.getElementById('main-nav').classList.toggle('scrolled',window.scrollY>60)});
+
+// INIT
+renderOSTable();renderLayers();renderEpisodes();renderFunnel();renderLang();renderPlatforms();renderFooterLinks();
+</script>
+</body>
+</html>
